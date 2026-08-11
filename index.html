@@ -1,0 +1,31 @@
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merge Cubes</title>
+    <!-- 🔌 Subimos la versión a v=5 para forzar la actualización de los botones -->
+    <link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body>
+
+    <div id="previewContainer">
+        <div>SIGUIENTE:</div>
+        <div id="nextPreview"></div>
+    </div>
+    
+    <div id="aimCanvasContainer">
+        <canvas id="aimCanvas"></canvas>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+    
+    <!-- 🌟 AQUÍ ESTÁN AMBOS BOTONES JUNTOS -->
+    <button id="btnReset">Reiniciar Juego</button>
+    <button id="btnMusica">🎵 Música: OFF</button>
+
+    <div id="winOverlay" style="display: none;">
+        <h2>¡GANASTE!</h2>
+        <button id="btnWinReset">Jugar de nuevo</button>
+    </div>
+
+    <script src="script.js?v=99"></script>
+</body>
