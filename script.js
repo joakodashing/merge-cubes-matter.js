@@ -1,7 +1,4 @@
-// ---------- LIBRERÍA NATIVA INYECTADA (ANTI-CORB) ----------
-// Carga local e inmediata de Matter.js para evitar bloqueos en Opera GX
-!function(e,t){"object"==typeof exports&&"object"==typeof module?module.exports=t():"function"==typeof define&&define.amd?define([],t):"object"==typeof exports?exports.Matter=t():e.Matter=t()}(this,(function(){return function(e){var t={};function n(r){if(t[r])return t[r].exports;var o=t[r]={i:r,l:false,exports:{}};e[r].call(o.exports,o,o.exports,n);o.l=true;return o.exports}return n}([])}));
-// (El motor físico real de Matter.js se inicializa aquí abajo de forma segura)
+// ---------- RECONOCIMIENTO DEL MOTOR DE MATTER.JS ----------
 const { Engine, Render, Runner, Bodies, Composite, Events, Body } = Matter;
 
 // ---------- CONFIGURACIÓN GENERAL ----------
@@ -12,7 +9,7 @@ let nextLevel = randomSpawnLevel();
 const WIDTH = 480;
 const HEIGHT = 720;
 
-// Tamaños estables unificados (Evita glitches de hitboxes)
+// Dimensiones fijas de tus cubos de Geometry Dash (Evita solapamientos)
 const CUBE_SIZES = {
   1: 50, 2: 60, 3: 70, 4: 80, 5: 90, 
   6: 100, 7: 110, 8: 120, 9: 130, 10: 145
@@ -26,11 +23,10 @@ function randomSpawnLevel() {
 }
 
 // ---------- INICIALIZACIÓN DEL MOTOR RIGIDO ----------
-const engine = Engine.create({ gravity: { y: 1.4 } }); // Gravedad firme estilo Geometry Dash
+const engine = Engine.create({ gravity: { y: 1.4 } }); // Caída firme estilo RobTop
 const world = engine.world;
 
-// Buscador tolerante de cajas de diseño para evitar pantallas en blanco
-const contenedorJuego = document.getElementById("game-container") || document.getElementById("gameCanvas") || document.body;
+const contenedorJuego = document.getElementById("game-container") || document.body;
 
 const render = Render.create({
   element: contenedorJuego,
@@ -38,8 +34,8 @@ const render = Render.create({
   options: {
     width: WIDTH,
     height: HEIGHT,
-    wireframes: false, // Permite renderizar las imágenes de tus cubos
-    background: '#0d1117' // Fondo oscuro limpio
+    wireframes: false, // Wireframes en false para ver tus imágenes PNG
+    background: '#0d1117'
   }
 });
 
@@ -47,7 +43,7 @@ Render.run(render);
 const runner = Runner.create();
 Runner.run(runner, engine);
 
-// Creación de las paredes de contención invisibles pero sólidas
+// Creación de límites físicos sólidos (Suelo y paredes de contención)
 const suelo = Bodies.rectangle(WIDTH / 2, HEIGHT + 30, WIDTH, 60, { isStatic: true, friction: 0.1 });
 const paredIzquierda = Bodies.rectangle(-30, HEIGHT / 2, 60, HEIGHT, { isStatic: true, friction: 0.1 });
 const paredDerecha = Bodies.rectangle(WIDTH + 30, HEIGHT / 2, 60, HEIGHT, { isStatic: true, friction: 0.1 });
@@ -67,10 +63,10 @@ musicaFondo.preload = "auto";
 
 function playSound(audioElement) {
   audioElement.currentTime = 0;
-  audioElement.play().catch(e => console.log("Audio esperando clic"));
+  audioElement.play().catch(e => console.log("Audio esperando un clic"));
 }
 
-// Variables internas para el apuntado
+// Variables de estado para el apuntado
 let currentSpawnX = WIDTH / 2;
 let isAiming = false;
 
@@ -78,7 +74,7 @@ function getCubeRenderOptions(level) {
   return {
     sprite: {
       texture: `${IMAGE_FOLDER}/cube${level}.png`,
-      xScale: CUBE_SIZES[level] / 100, // Escala basada en un PNG de 100px estándar
+      xScale: CUBE_SIZES[level] / 100, // Escala basada en imágenes estándar de 100px
       yScale: CUBE_SIZES[level] / 100
     }
   };
@@ -93,7 +89,6 @@ function actualizarPreview() {
 setTimeout(actualizarPreview, 200);
 
 // ---------- SISTEMA DE APUNTADO Y LANZAMIENTO DIRECCIONAL ----------
-// Al mover el mouse sobre el canvas actualizamos la línea invisible de caída
 render.canvas.addEventListener('mousemove', (e) => {
   const rect = render.canvas.getBoundingClientRect();
   const clickX = (e.clientX - rect.left) * (WIDTH / rect.width);
@@ -102,12 +97,11 @@ render.canvas.addEventListener('mousemove', (e) => {
   isAiming = true;
 });
 
-// Al hacer clic, el cubo cae exactamente en esa coordenada X
 render.canvas.addEventListener('click', () => {
   const size = CUBE_SIZES[nextLevel];
   
   const nuevoCubo = Bodies.rectangle(currentSpawnX, 80, size, size, {
-    restitution: 0.1, // Peso rígido estilo Geometry Dash
+    restitution: 0.1, // Bloques rígidos y pesados estilo Geometry Dash
     friction: 0.1,
     render: getCubeRenderOptions(nextLevel),
     plugin: { level: nextLevel, id: Math.random(), spawnTime: Date.now() }
@@ -126,7 +120,6 @@ Events.on(engine, 'collisionStart', (event) => {
   event.pairs.forEach((pair) => {
     const { bodyA, bodyB } = pair;
 
-    // Verificamos si ambos son cubos de juego válidos
     if (bodyA.plugin && bodyB.plugin && bodyA.plugin.level && bodyB.plugin.level) {
       if (bodyA.plugin.level === bodyB.plugin.level) {
         const nivelActual = bodyA.plugin.level;
@@ -134,15 +127,15 @@ Events.on(engine, 'collisionStart', (event) => {
 
         const todosLosCuerpos = Composite.allBodies(world);
         if (!todosLosCuerpos.includes(bodyA) || !todosLosCuerpos.includes(bodyB)) {
-          return; // Si ya se borraron en este frame, ignoramos
+          return; 
         }
 
-        // Evitamos fusiones dobles accidentales al nacer (cooldown de 150ms)
+        // Cooldown de 150ms para evitar bucles de fusión en el mismo fotograma
         const tiempoA = Date.now() - (bodyA.plugin.spawnTime || 0);
         const tiempoB = Date.now() - (bodyB.plugin.spawnTime || 0);
         if (tiempoA < 150 || tiempoB < 150) return;
 
-        // Matter.js remueve los cuerpos sin dejar "bordes fantasma"
+        // Remover del mundo físico de forma limpia
         Composite.remove(world, bodyA);
         Composite.remove(world, bodyB);
 
@@ -159,7 +152,7 @@ Events.on(engine, 'collisionStart', (event) => {
             plugin: { level: nuevoNivel, id: Math.random(), spawnTime: Date.now() }
           });
 
-          // Un pequeño brinco físico para celebrar la fusión
+          // Un pequeño salto físico vertical muy satisfactorio
           Body.setVelocity(cuboFusionado, { x: (Math.random() - 0.5) * 2, y: -3 });
           Composite.add(world, cuboFusionado);
           playSound(soundMerge);
@@ -169,7 +162,7 @@ Events.on(engine, 'collisionStart', (event) => {
   });
 });
 
-// ---------- BOTÓN DE REINICIO Y INTERRUPTOR MÚSICA ----------
+// ---------- BOTONES DE CONTROL DE INTERFAZ ----------
 function resetearJuego() {
   const todosLosCuerpos = Composite.allBodies(world);
   todosLosCuerpos.forEach(body => {
