@@ -21,7 +21,7 @@ html,body{height:100%;margin:0;font-family:Inter,Arial,Helvetica,sans-serif;back
 #controls button{background:var(--accent);border:0;padding:8px 12px;border-radius:10px;color:white;cursor:pointer}
 #controls .info{font-size:13px;color:rgba(230,238,248,0.75)}
 
-#gameCanvas{
+#game-container{
   display:block;
   margin:90px auto 24px;
   background: linear-gradient(180deg,#071029 0%, #081726 100%);
